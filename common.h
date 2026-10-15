@@ -13,6 +13,12 @@ struct AutoCloseHandle {
     ~AutoCloseHandle() {
         Close();
     }
+    operator HANDLE() const {
+        return m_h;
+    }
+    PHANDLE operator&() {
+        return &m_h;
+    }
     void operator=(HANDLE h) {
         Close();
         m_h = h;
