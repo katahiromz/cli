@@ -9,7 +9,7 @@ project(cli CXX)
 
 ##############################################################################
 
-# xwg.exe
+# cli.exe
 add_executable(cli cli.cpp)
 
 # starter.exe
