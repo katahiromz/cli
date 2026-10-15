@@ -13,6 +13,12 @@ struct AutoCloseHandle {
     ~AutoCloseHandle() {
         Close();
     }
+    void Close() {
+        if (m_h && m_h != INVALID_HANDLE_VALUE) {
+            CloseHandle(m_h);
+            m_h = NULL;
+        }
+    }
     operator HANDLE() const {
         return m_h;
     }
@@ -23,23 +29,18 @@ struct AutoCloseHandle {
         Close();
         m_h = h;
     }
-    void Close() {
-        if (m_h && m_h != INVALID_HANDLE_VALUE) {
-            CloseHandle(m_h);
-            m_h = NULL;
-        }
-    }
 };
 
-struct SHARED : AutoCloseHandle {
-    typedef LONG value_type;
+template <typename T_BASE>
+struct Shared : AutoCloseHandle {
+    typedef T_BASE value_type;
     volatile value_type m_value;
 
-    SHARED() { }
-    ~SHARED() { }
+    Shared() { }
+    ~Shared() { }
 
     BOOL Create(const value_type& initial = {}) {
-        m_h = CreateFileMappingW(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(SHARED), CLI_SHARED_NAME);
+        m_h = CreateFileMappingW(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(Shared), CLI_SHARED_NAME);
         if (!m_h)
             return FALSE;
         return Write(initial);
@@ -51,7 +52,7 @@ struct SHARED : AutoCloseHandle {
     }
 
     BOOL Read(value_type* value) {
-        auto pShared = (SHARED*)MapViewOfFile(m_h, FILE_MAP_READ, 0, 0, sizeof(SHARED));
+        auto pShared = (Shared*)MapViewOfFile(m_h, FILE_MAP_READ, 0, 0, sizeof(Shared));
         if (!pShared) {
             return FALSE;
         }
@@ -61,12 +62,39 @@ struct SHARED : AutoCloseHandle {
     }
 
     BOOL Write(const value_type& value) {
-        auto pShared = (SHARED*)MapViewOfFile(m_h, FILE_MAP_WRITE, 0, 0, sizeof(SHARED));
+        auto pShared = (Shared*)MapViewOfFile(m_h, FILE_MAP_WRITE, 0, 0, sizeof(Shared));
         if (!pShared) {
             return FALSE;
         }
         pShared->m_value = value;
         UnmapViewOfFile(pShared);
         return TRUE;
+    }
+};
+
+typedef Shared<LONG> SharedLong;
+
+struct AutoFClose {
+    FILE *m_fp;
+
+    AutoFClose(FILE *fp = NULL) : m_fp(fp) { }
+
+    ~AutoFClose() {
+        Close();
+    }
+
+    void Close() {
+        if (m_fp) {
+            fclose(m_fp);
+            m_fp = NULL;
+        }
+    }
+
+    operator FILE*() const {
+        return m_fp;
+    }
+    void operator=(FILE *fp) {
+        Close();
+        m_fp = fp;
     }
 };

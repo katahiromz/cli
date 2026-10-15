@@ -10,15 +10,15 @@ int main(void)
 {
     HANDLE cancel_event = OpenEventW(EVENT_MODIFY_STATE, FALSE, CLI_CANCEL_EVENT);
     if (!cancel_event) {
-        fprintf(stderr, "Failed to cancel\n");
+        fprintf(stderr, "canceler: Failed to open cancel_event\n");
         return 1;
     }
     AutoCloseHandle auto_close_0(cancel_event);
 
-    SHARED shared;
-    SHARED::value_type value;
+    SharedLong shared;
+    SharedLong::value_type value;
     if (!shared.Open()) {
-        fwprintf(stderr, L"SHARED::Open failed\n");
+        fwprintf(stderr, L"canceler: SharedLong::Open failed\n");
         return 1;
     }
 
@@ -29,6 +29,6 @@ int main(void)
     }
 
     SetEvent(cancel_event);
-    fprintf(stderr, "Canceled.\n");
+    fprintf(stderr, "canceler: Canceled.\n");
     return 0;
 }

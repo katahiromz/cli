@@ -5,6 +5,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <string>
+#include <new>
 #include "common.h"
 
 void version(void)
@@ -17,10 +18,8 @@ void usage(void)
     puts(
         "Usage: cli [OPTIONS] [input_file] [output_file]\n"
         "  Options:\n"
-        "    --help (or -h)                     Display this message.\n"
-        "    --version (or -v)                  Display version info.\n"
-        "    --input  INPUT  (or -i INPUT)      Specify the input file.\n"
-        "    --output OUTPUT (or -o OUTPUT)     Specify the output file.\n"
+        "    --help       Display this message.\n"
+        "    --version    Display version info.\n"
     );
 }
 
@@ -31,26 +30,28 @@ bool g_canceled = false;
 std::wstring g_input_file;
 std::wstring g_output_file;
 
-bool do_it(void)
+HRESULT do_it(void)
 {
     g_cancel_event = CreateEventW(NULL, TRUE, FALSE, CLI_CANCEL_EVENT);
     if (!g_cancel_event) {
         fwprintf(stderr, L"cli: Cannot create g_cancel_event\n");
-        return false;
+        return E_FAIL;
     }
     AutoCloseHandle auto_close_0(g_cancel_event);
 
-    SHARED shared;
+    SharedLong shared;
     if (!shared.Create(999)) {
-        fwprintf(stderr, L"SHARED::Create failed\n");
-        return false;
+        fwprintf(stderr, L"SharedLong::Create failed\n");
+        return E_FAIL;
     }
 
     FILE *fin = _wfopen(g_input_file.c_str(), L"rb");
     if (!fin) {
         fwprintf(stderr, L"cli: Cannot open file '%s'\n", g_input_file.c_str());
-        return false;
+        return E_FAIL;
     }
+    AutoFClose auto_close_1(fin);
+
     FILE *fout;
     if (g_output_file.empty())
         fout = stdout;
@@ -58,14 +59,14 @@ bool do_it(void)
         fout = _wfopen(g_output_file.c_str(), L"wb");
     if (!fout) {
         fwprintf(stderr, L"cli: Cannot open file '%s'\n", g_output_file.c_str());
-        fclose(fin);
-        return false;
+        return E_FAIL;
     }
+    AutoFClose auto_close_2(g_output_file.empty() ? NULL : fout);
 
     char buf[512];
-    SHARED::value_type value;
+    SharedLong::value_type value;
     while (fgets(buf, sizeof(buf), fin)) {
-        shared.Write((SHARED::value_type)strlen(buf));
+        shared.Write((SharedLong::value_type)strlen(buf));
         if (WaitForSingleObject(g_cancel_event, 0) == WAIT_OBJECT_0) {
             g_canceled = true;
             break;
@@ -74,78 +75,46 @@ bool do_it(void)
         Sleep(1000);
     }
 
-    fclose(fin);
-    if (g_output_file.size())
-        fclose(fout);
-
     if (g_canceled) {
-        fwprintf(stderr, L"cli: operation canceled\n");
-        return false;
+        fwprintf(stderr, L"cli: Operation canceled\n");
+        return E_ABORT;
     }
 
-    return true;
+    return S_OK;
 }
 
-bool run(void)
+HRESULT run(void)
 {
     if (g_help) {
         usage();
-        return false;
+        return S_OK;
     }
     if (g_version) {
         version();
-        return false;
+        return S_OK;
     }
 
-    if (!do_it()) {
-        return false;
+    try {
+        return do_it();
+    } catch (const std::bad_alloc& ba) {
+        return E_OUTOFMEMORY;
     }
-
-    return true;
 }
 
 bool parse_cmdline(int argc, wchar_t **wargv)
 {
     for (int iarg = 1; iarg < argc; ++iarg) {
         std::wstring arg = wargv[iarg];
-        if (arg == L"-h" || arg == L"--help") {
+        if (arg == L"--help") {
             g_help = true;
-            continue;
+            break;
         }
-        if (arg == L"-v" || arg == L"--version") {
+        if (arg == L"--version") {
             g_version = true;
-            continue;
-        }
-        if (arg == L"-i" || arg == L"--input") {
-            if (++iarg < argc) {
-                if (g_input_file.empty()) {
-                    g_input_file = wargv[iarg];
-                } else {
-                    fwprintf(stderr, L"cli: too many argument\n");
-                    return false;
-                }
-            } else {
-                fwprintf(stderr, L"cli: missing argument for -i\n");
-                return false;
-            }
-            continue;
-        }
-        if (arg == L"-o" || arg == L"--output") {
-            if (++iarg < argc) {
-                if (g_output_file.empty()) {
-                    g_output_file = wargv[iarg];
-                } else {
-                    fwprintf(stderr, L"cli: too many argument\n");
-                    return false;
-                }
-            } else {
-                fwprintf(stderr, L"cli: missing argument for -o\n");
-                return false;
-            }
-            continue;
+            break;
         }
         if (arg.size() && arg[0] == L'-') {
-            fwprintf(stderr, L"cli: invalid argument '%s'\n", arg.c_str());
+            fwprintf(stderr, L"cli: Invalid argument '%s'\n", arg.c_str());
             return false;
         }
         if (g_input_file.empty()) {
@@ -153,7 +122,7 @@ bool parse_cmdline(int argc, wchar_t **wargv)
         } else if (g_output_file.empty()) {
             g_output_file = arg;
         } else {
-            fwprintf(stderr, L"cli: invalid argument '%s'\n", arg.c_str());
+            fwprintf(stderr, L"cli: Too many arguments\n");
             return false;
         }
     }
@@ -168,8 +137,8 @@ bool parse_cmdline(int argc, wchar_t **wargv)
 int wmain(int argc, wchar_t **wargv)
 {
     if (!parse_cmdline(argc, wargv))
-        return 1;
-    return run() ? 0 : 1;
+        return E_INVALIDARG;
+    return run();
 }
 
 int main(void)
