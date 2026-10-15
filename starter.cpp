@@ -3,7 +3,7 @@
 int main(void)
 {
     MProcessMaker pmaker;
-    pmaker.SetCreationFlags(CREATE_NO_WINDOW);
+    //pmaker.SetCreationFlags(CREATE_NO_WINDOW);
     //pmaker.SetCreationFlags(CREATE_NEW_CONSOLE);
     if (!pmaker.CreateProcessDx("cli.exe")) {
         printf("Cannot start up\n");
