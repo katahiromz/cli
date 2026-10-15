@@ -1,3 +1,3 @@
-# cli --- Cancelable command line interface
+# cli --- C++/Win32 cancelable command line interface
 
 License: MIT
