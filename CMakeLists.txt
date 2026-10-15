@@ -12,6 +12,9 @@ project(cli CXX)
 # xwg.exe
 add_executable(cli cli.cpp)
 
+# starter.exe
+add_executable(starter starter.cpp)
+
 # canceler.exe
 add_executable(canceler canceler.cpp)
 
