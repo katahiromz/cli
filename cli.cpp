@@ -1,4 +1,4 @@
-// cli.cpp --- Cancelable command line interface
+// cli.cpp --- C++/Win32 Cancelable command line interface
 // Author: katahiromz
 // License: MIT
 
