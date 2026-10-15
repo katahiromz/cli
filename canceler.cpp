@@ -8,12 +8,12 @@
 
 int main(void)
 {
-    HANDLE hEvent = OpenEventW(EVENT_MODIFY_STATE, FALSE, CLI_CANCEL_EVENT);
-    if (!hEvent) {
+    HANDLE cancel_event = OpenEventW(EVENT_MODIFY_STATE, FALSE, CLI_CANCEL_EVENT);
+    if (!cancel_event) {
         fprintf(stderr, "Failed to cancel\n");
         return 1;
     }
-    AutoCloseHandle auto_close_0(hEvent);
+    AutoCloseHandle auto_close_0(cancel_event);
 
     SHARED shared;
     SHARED::value_type value;
@@ -28,7 +28,7 @@ int main(void)
         Sleep(1000);
     }
 
-    SetEvent(hEvent);
+    SetEvent(cancel_event);
     fprintf(stderr, "Canceled.\n");
     return 0;
 }
