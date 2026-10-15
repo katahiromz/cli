@@ -44,12 +44,12 @@ struct SHARED : AutoCloseHandle {
         return !!m_h;
     }
 
-    BOOL Read(value_type& value) {
+    BOOL Read(value_type* value) {
         auto pShared = (SHARED*)MapViewOfFile(m_h, FILE_MAP_READ, 0, 0, sizeof(SHARED));
         if (!pShared) {
             return FALSE;
         }
-        value = pShared->m_value;
+        *value = pShared->m_value;
         UnmapViewOfFile(pShared);
         return TRUE;
     }
