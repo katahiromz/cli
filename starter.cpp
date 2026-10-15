@@ -1,3 +1,7 @@
+// starter.cpp --- C++/Win32 command line starter
+// Author: katahiromz
+// License: MIT
+
 #include "MProcessMaker.hpp"
 
 int main(void)
