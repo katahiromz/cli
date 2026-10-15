@@ -54,7 +54,7 @@ struct SHARED : AutoCloseHandle {
         return TRUE;
     }
 
-    BOOL Write(value_type value) {
+    BOOL Write(const value_type& value) {
         auto pShared = (SHARED*)MapViewOfFile(m_h, FILE_MAP_WRITE, 0, 0, sizeof(SHARED));
         if (!pShared) {
             return FALSE;
