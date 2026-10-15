@@ -32,7 +32,7 @@ struct SHARED : AutoCloseHandle {
     SHARED() { }
     ~SHARED() { }
 
-    BOOL Create(value_type initial = {}) {
+    BOOL Create(const value_type& initial = {}) {
         m_h = CreateFileMappingW(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, sizeof(SHARED), CLI_SHARED_NAME);
         if (!m_h)
             return FALSE;
